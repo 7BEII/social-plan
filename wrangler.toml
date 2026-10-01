@@ -1,0 +1,6 @@
+name = "social-plan-flomo"
+main = "flomo-proxy-worker.mjs"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://7beii.github.io"

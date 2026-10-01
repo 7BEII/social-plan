@@ -90,6 +90,7 @@ input, textarea, select { font-size: 16px !important; }
             <span>推送</span>
           </button>
         </div>
+<button onclick="openFlomoSettings()" aria-label="flomo登录设置" title="flomo登录设置" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300"><i class="fa-solid fa-gear"></i></button>
         <button id="context-add" onclick="handleContextAdd()" title="添加意向人" aria-label="添加意向人" class="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center border border-white/10 active-scale text-white transition shadow-md shadow-rose-500/20">
           <i class="fa-solid fa-plus text-xs"></i>
         </button>
@@ -545,10 +546,10 @@ input, textarea, select { font-size: 16px !important; }
                   </div>
                   <div>
                     <div class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
-                      <span>${item.name}</span>
-                      <span class="text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">${item.circle}</span>
+                      <span>${escapeHtml(item.name)}</span>
+                      <span class="text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">${escapeHtml(item.circle)}</span>
                     </div>
-                    <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${item.notes}</div>
+                    <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(item.notes)}</div>
                   </div>
                 </div>
 
@@ -624,7 +625,7 @@ input, textarea, select { font-size: 16px !important; }
       document.getElementById('debrief-target-select').value = item.id;
       renderDimensionSliders();
       drawRadarChart();
-      showToast(`已加载【${item.name}】的 6 维意向触点`);
+      showToast(`已加载【${escapeHtml(item.name)}】的 6 维意向触点`);
     }
 
     /* ========== 直接 Canvas 预览弹窗控制逻辑 ========== */
@@ -633,8 +634,8 @@ input, textarea, select { font-size: 16px !important; }
       if (!item) return;
       activePreviewTargetId = targetId;
 
-      document.getElementById('preview-target-name').innerText = `${item.name} · 雷达图谱`;
-      document.getElementById('preview-target-tier').innerText = `${item.tier} 级意向 · 所属${item.circle} · 综合 ${item.energyScore} 分`;
+      document.getElementById('preview-target-name').innerText = `${escapeHtml(item.name)} · 雷达图谱`;
+      document.getElementById('preview-target-tier').innerText = `${item.tier} 级意向 · 所属${escapeHtml(item.circle)} · 综合 ${item.energyScore} 分`;
 
       // 填充 6 维网格指标
       const grid = document.getElementById('preview-dimensions-grid');
@@ -934,7 +935,7 @@ input, textarea, select { font-size: 16px !important; }
       const select = document.getElementById('debrief-target-select');
       if (!select) return;
       select.innerHTML = STATE.targets.map(t => `
-        <option value="${t.id}">${t.name} · [${t.tier}级] (${t.circle})</option>
+        <option value="${t.id}">${escapeHtml(t.name)} · [${t.tier}级] (${escapeHtml(t.circle)})</option>
       `).join('');
     }
 
@@ -1213,8 +1214,8 @@ input, textarea, select { font-size: 16px !important; }
     }
 
     // 手机预览仅保留少量虚构示例；同步仍为原文件的本地演示。
-    STATE.targets = STATE.targets.filter(t => [1, 2, 3].includes(t.id));
-    STATE.debriefNotes = STATE.debriefNotes.slice(0, 1);
+    STATE.targets = [];
+    STATE.debriefNotes = [];
     const retainedCircles = CIRCLES_DATA.filter(c => ['户外搭子圈', '文艺策展圈', '互联网科技圈', '美食精酿圈'].includes(c.name));
     CIRCLES_DATA.splice(0, CIRCLES_DATA.length, ...retainedCircles);
     CIRCLES_DATA.forEach(c => { c.tags = c.tags.slice(0, 2); });
@@ -1224,7 +1225,7 @@ input, textarea, select { font-size: 16px !important; }
     try {
       const saved = JSON.parse(localStorage.getItem(previewStorageKey) || 'null');
       if (saved && Array.isArray(saved.targets) && Array.isArray(saved.debriefNotes)) {
-        STATE.targets = saved.targets;
+        STATE.targets = saved.targets.map(t=>({...t,isDemo:t.isDemo ?? (t.id<=5 && ['林语 (策展策划)','陈亦 (户外徒步)','周明 (算法开发)','沈舟 (精酿调酒师)','赵越 (体制内相亲)'].includes(t.name))}));
         STATE.debriefNotes = saved.debriefNotes;
       }
     } catch (_) { /* 文件浏览器不支持存储时，继续提供内存演示。 */ }
@@ -1376,8 +1377,10 @@ input, textarea, select { font-size: 16px !important; }
       }
     });
   </script>
-</body>
+<div id="flomo-settings" role="dialog" aria-modal="true" aria-label="flomo登录设置" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="glass-card rounded-2xl p-5 w-full max-w-sm space-y-4 max-h-[85dvh] overflow-y-auto"><h2 class="font-bold">flomo 登录设置</h2><p class="text-sm text-slate-300">同步范围：#PD/谈恋爱</p><p id="flomo-service-status" class="text-xs text-amber-300">同步服务待接通；当前直连测试可能被浏览器拦截</p><p id="flomo-token-status" class="text-xs text-slate-400"></p><label class="block text-sm">Token<input id="flomo-token-input" type="password" autocomplete="off" placeholder="粘贴 Token（只保存在本机）" class="block w-full p-3 rounded-xl bg-slate-900 mt-2"></label><button onclick="saveFlomoToken()" class="w-full p-3 rounded-xl bg-rose-600">保存登录配置</button><label class="block text-sm text-indigo-300">导入已有 flomo 配置 JSON<input id="flomo-config-file" type="file" accept=".json,application/json" onchange="importFlomoToken(this)" class="block w-full mt-2 text-xs"></label><p class="text-xs text-slate-400">配置和笔记仅保存在此浏览器；拉取只读取指定标签，推送只提交你修改的记录。删除只从本机移除，不删除 flomo 原笔记。</p><div class="flex gap-3"><button onclick="clearFlomoToken()" class="flex-1 p-3 rounded-xl bg-slate-800">清除配置</button><button onclick="closeFlomoSettings()" class="flex-1 p-3 rounded-xl bg-slate-800">关闭</button></div></div></div><script src="./flomo-config.js"></script><script src="./flomo-md5.js"></script><script src="./flomo-sync.js"></script></body>
 </html>
+
+
 
 
 

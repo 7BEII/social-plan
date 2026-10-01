@@ -118,6 +118,26 @@
     catch(_) {showToast('请选择包含 token 字段的本地配置JSON');} finally {input.value='';}
   };
   window.clearFlomoToken=function() {localStorage.removeItem(TOKEN_KEY);document.getElementById('flomo-token-input').value='';refreshSyncStatus();showToast('本机登录配置已清除');};
+
+  window.importFlomoNotesFile=async function(input) {
+    try {
+      const data=JSON.parse(await input.files[0].text());
+      if(data.app!=='social-plan'||data.scope!==ROOT||!Array.isArray(data.memos))throw new Error('请选择本应用的指定范围笔记文件');
+      const parsed=data.memos.map(m=>{if(typeof m.content!=='string'||typeof m.slug!=='string')throw new Error('笔记文件格式异常');return parseMemo(m);}).filter(Boolean);
+      let count=0;
+      STATE.targets=STATE.targets.filter(t=>!t.isDemo);
+      for(const entry of parsed) {
+        if(hidden.has(entry.item.sourceSlug))continue;
+        const list=records(entry.kind),existing=list.find(x=>x.sourceSlug===entry.item.sourceSlug||x.id===entry.item.id);
+        if(existing?.dirty)continue;
+        if(existing)Object.assign(existing,entry.item);else list.unshift(entry.item);
+        count++;
+      }
+      saveAll();refreshViews();closeFlomoSettings();switchTab('phrases');showToast('已导入 '+count+' 条笔记到本机');
+    } catch(e) {showToast(e.message||'笔记导入失败，本机记录保留');}
+    finally {input.value='';}
+  };
+
   window.handlePullData=async function() {
     if(busy)return;busy=true;refreshSyncStatus('正在拉取 #PD/谈恋爱…');
     try {

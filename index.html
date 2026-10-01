@@ -171,7 +171,7 @@ input, textarea, select { font-size: 16px !important; }
     <button onclick="switchTab('preferences')" id="nav-preferences" class="nav-btn flex flex-col items-center py-1 px-3 text-slate-400"><i class="fa-solid fa-heart text-base"></i><span class="text-[10px] mt-1">我的意向</span></button></nav>
 
     <div id="modal-add" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-      <div class="glass-card w-full max-w-sm rounded-3xl p-5 border border-white/15 space-y-4">
+      <div class="glass-card w-full max-w-sm rounded-3xl p-5 border border-white/15 space-y-4 max-h-[85dvh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-white/10 pb-3">
           <h3 class="text-sm font-bold text-slate-100 flex items-center space-x-2">
             <i class="fa-solid fa-user-plus text-rose-400"></i>
@@ -215,6 +215,7 @@ input, textarea, select { font-size: 16px !important; }
             </div>
           </div>
 
+<div><label for="input-score" class="text-slate-400 block mb-1">意向值（可选，0–100）</label><input id="input-score" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="不了解时留空，不猜分数" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"></div><div><label for="input-keywords" class="text-slate-400 block mb-1">偏好关键词（可选）</label><input id="input-keywords" type="text" placeholder="例如：真诚，喜欢运动，尊重边界" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"><p class="text-[11px] text-slate-500 mt-1">逗号分隔，同一个关键词用相同写法，会参与共性排行。</p></div>
           <div>
             <label class="text-slate-400 block mb-1">初次接触印象 / 细节备忘</label>
             <input id="input-notes" type="text" placeholder="例如：审美同频，主动提前选好安静咖啡位" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-rose-500">
@@ -1180,7 +1181,11 @@ input, textarea, select { font-size: 16px !important; }
       const name = document.getElementById('input-name').value.trim();
       const tier = document.getElementById('input-tier').value;
       const circle = document.getElementById('input-circle').value;
-      const notes = document.getElementById('input-notes').value.trim() || '初次建档，待实战复盘验证';
+      const notes = document.getElementById('input-notes').value.trim();
+      const rawScore=document.getElementById('input-score').value.trim();
+      const score=rawScore===''?null:Number(rawScore);
+      if(score!==null&&(!Number.isInteger(score)||score<0||score>100)){showToast('意向值请输入0–100整数，或留空');return;}
+      const keywords=[...new Set(document.getElementById('input-keywords').value.split(/[,，、]+/).map(x=>x.trim()).filter(Boolean))];
 
       if (!name) {
         showToast('请输入姓名或昵称备注', 'fa-circle-exclamation', 'text-amber-400');
@@ -1194,7 +1199,8 @@ input, textarea, select { font-size: 16px !important; }
         name,
         tier,
         circle,
-        energyScore: null,
+        energyScore: score,
+        keywords,
         notes,
         radar: {
           emotion: initialScore,
@@ -1208,6 +1214,8 @@ input, textarea, select { font-size: 16px !important; }
 
       document.getElementById('input-name').value = '';
       document.getElementById('input-notes').value = '';
+      document.getElementById('input-score').value = '';
+      document.getElementById('input-keywords').value = '';
       closeAddTargetModal();
       renderPipeline();
       showToast(`已成功录入【${name}】至 ${tier} 级意向看板`);
@@ -1377,7 +1385,7 @@ input, textarea, select { font-size: 16px !important; }
       }
     });
   </script>
-<div id="flomo-settings" role="dialog" aria-modal="true" aria-label="flomo登录设置" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="glass-card rounded-2xl p-5 w-full max-w-sm space-y-4 max-h-[85dvh] overflow-y-auto"><h2 class="font-bold">flomo 登录设置</h2><p class="text-sm text-slate-300">同步范围：#PD/谈恋爱</p><p id="flomo-service-status" class="text-xs text-amber-300">同步服务待接通；当前直连测试可能被浏览器拦截</p><p id="flomo-token-status" class="text-xs text-slate-400"></p><label class="block text-sm">Token<input id="flomo-token-input" type="password" autocomplete="off" placeholder="粘贴 Token（只保存在本机）" class="block w-full p-3 rounded-xl bg-slate-900 mt-2"></label><button onclick="saveFlomoToken()" class="w-full p-3 rounded-xl bg-rose-600">保存登录配置</button><label class="block text-sm text-indigo-300">导入已有 flomo 配置 JSON<input id="flomo-config-file" type="file" accept=".json,application/json" onchange="importFlomoToken(this)" class="block w-full mt-2 text-xs"></label><p class="text-xs text-slate-400">配置和笔记仅保存在此浏览器；拉取只读取指定标签，推送只提交你修改的记录。删除只从本机移除，不删除 flomo 原笔记。</p><div class="flex gap-3"><button onclick="clearFlomoToken()" class="flex-1 p-3 rounded-xl bg-slate-800">清除配置</button><button onclick="closeFlomoSettings()" class="flex-1 p-3 rounded-xl bg-slate-800">关闭</button></div></div></div><script src="./flomo-config.js"></script><script src="./flomo-md5.js"></script><script src="./flomo-sync.js"></script></body>
+<div id="flomo-settings" role="dialog" aria-modal="true" aria-label="flomo登录设置" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="glass-card rounded-2xl p-5 w-full max-w-sm space-y-4 max-h-[85dvh] overflow-y-auto"><h2 class="font-bold">flomo 登录设置</h2><p class="text-sm text-slate-300">同步范围：#PD/谈恋爱</p><p id="flomo-service-status" class="text-xs text-amber-300">同步服务待接通；当前直连测试可能被浏览器拦截</p><p id="flomo-token-status" class="text-xs text-slate-400"></p><label class="block text-sm">Token<input id="flomo-token-input" type="password" autocomplete="off" placeholder="粘贴 Token（只保存在本机）" class="block w-full p-3 rounded-xl bg-slate-900 mt-2"></label><button onclick="saveFlomoToken()" class="w-full p-3 rounded-xl bg-rose-600">保存登录配置</button><label class="block text-sm text-indigo-300">导入已有 flomo 配置 JSON<input id="flomo-config-file" type="file" accept=".json,application/json" onchange="importFlomoToken(this)" class="block w-full mt-2 text-xs"></label><label class="block text-sm text-indigo-300">导入私密笔记 JSON<input id="flomo-notes-file" type="file" accept=".json,application/json" onchange="importFlomoNotesFile(this)" class="block w-full mt-2 text-xs"></label><p class="text-xs text-slate-400">笔记导入仅在本机显示，不等于云端同步。</p><p class="text-xs text-slate-400">配置和笔记仅保存在此浏览器；拉取只读取指定标签，推送只提交你修改的记录。删除只从本机移除，不删除 flomo 原笔记。</p><div class="flex gap-3"><button onclick="clearFlomoToken()" class="flex-1 p-3 rounded-xl bg-slate-800">清除配置</button><button onclick="closeFlomoSettings()" class="flex-1 p-3 rounded-xl bg-slate-800">关闭</button></div></div></div><script src="./flomo-config.js"></script><script src="./flomo-md5.js"></script><script src="./flomo-sync.js"></script></body>
 </html>
 
 

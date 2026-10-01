@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Social Girl · 手机精简预览</title>
+  <!-- Tailwind CSS CDN -->
+  <link rel="stylesheet" href="./styles.css">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="./assets/css/icons.css">
+  
+  <style>
+    /* 移动端平滑滚动与优化 */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    body {
+      background-color: #0b0d13;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .glass-nav {
+      background: rgba(18, 21, 30, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .glass-card {
+      background: linear-gradient(145deg, rgba(28, 33, 46, 0.7), rgba(20, 24, 34, 0.9));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .active-scale:active {
+      transform: scale(0.97);
+    }
+  </style>
+<style>
+body > div { max-width: 390px !important; }
+nav { max-width: 390px !important; padding-bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+header { flex-wrap: wrap; gap: 10px; }
+header > div:last-child { margin-left: auto; }
+#circle-chips { flex-wrap: wrap; overflow: visible; }
+button, select { min-height: 36px; }
+input, textarea, select { font-size: 16px !important; }
+#pipeline-list > div > div:first-child > span:last-child { display: none; }
+#pipeline-list .glass-card > div:first-child { flex-wrap: wrap; gap: 8px; }
+#pipeline-list .glass-card > div:first-child > div:first-child { min-width: 0; }
+#pipeline-list .glass-card .font-bold.flex { flex-wrap: wrap; gap: 4px; }
+@media (min-width: 600px) { body { padding: 24px 0; } body > div { border-radius: 30px; overflow: clip; border: 1px solid #272b38; } }
+</style>
+</head>
+<body class="text-slate-100 min-h-screen flex justify-center bg-[#07090e]">
+
+  <!-- Mobile Container Wrapper (模拟手机视窗/自适应真实设备) -->
+  <div class="w-full max-w-md min-h-screen flex flex-col bg-[#0b0d13] relative pb-24 shadow-2xl border-x border-slate-900/60">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 glass-nav px-5 pt-4 pb-3 border-b border-white/5 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+          <i class="fa-solid fa-chart-simple text-white text-base animate-pulse"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="font-bold text-base tracking-wide bg-gradient-to-r from-rose-300 via-pink-200 to-indigo-200 bg-clip-text text-transparent">Social Girl</h1>
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 font-semibold px-1.5 py-0.5 rounded-full border border-rose-500/30">Pro</span>
+          </div>
+          <p class="text-[11px] text-slate-400">个人记录 · 手机网页版</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <!-- 同步控制区：只做拉取和推送 -->
+        <div class="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 shadow-inner">
+          <button onclick="handlePullData()" title="读取模拟备份（未接通flomo）" class="px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white hover:bg-white/10 active-scale flex items-center space-x-1 transition">
+            <i id="pull-icon" class="fa-solid fa-cloud-arrow-down text-indigo-400"></i>
+            <span>拉取</span>
+          </button>
+          <div class="w-[1px] h-3 bg-slate-700 mx-0.5"></div>
+          <button onclick="handlePushData()" title="保存模拟备份（未接通flomo）" class="px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-300 hover:text-white hover:bg-white/10 active-scale flex items-center space-x-1 transition">
+            <i id="push-icon" class="fa-solid fa-cloud-arrow-up text-rose-400"></i>
+            <span>推送</span>
+          </button>
+        </div>
+        <button id="context-add" onclick="handleContextAdd()" title="添加意向人" aria-label="添加意向人" class="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center border border-white/10 active-scale text-white transition shadow-md shadow-rose-500/20">
+          <i class="fa-solid fa-plus text-xs"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- In-App Floating Toast Notification -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-slate-800/95 border border-slate-700 text-xs font-medium text-slate-200 shadow-2xl flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
+      <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span id="toastMsg">提示信息</span>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-1 px-4 pt-4 overflow-y-auto hide-scrollbar">
+
+      <!-- TAB 1: 意向看板 (上下排行 Pipeline) -->
+      <section id="tab-pipeline" class="tab-pane space-y-4">
+        <!-- 统计状态胶囊 -->
+        <div class="grid grid-cols-4 gap-2 text-center text-xs">
+          <div class="glass-card p-2.5 rounded-2xl border-rose-500/20">
+            <div class="text-[10px] text-rose-400 font-medium">S 级核心</div>
+            <div class="text-base font-bold text-rose-200 mt-0.5" id="count-s">1</div>
+          </div>
+          <div class="glass-card p-2.5 rounded-2xl border-indigo-500/20">
+            <div class="text-[10px] text-indigo-400 font-medium">A 级观察</div>
+            <div class="text-base font-bold text-indigo-200 mt-0.5" id="count-a">2</div>
+          </div>
+          <div class="glass-card p-2.5 rounded-2xl border-amber-500/20">
+            <div class="text-[10px] text-amber-400 font-medium">B 级搭子</div>
+            <div class="text-base font-bold text-amber-200 mt-0.5" id="count-b">1</div>
+          </div>
+          <div class="glass-card p-2.5 rounded-2xl border-slate-500/20">
+            <div class="text-[10px] text-slate-400 font-medium">C 级止损</div>
+            <div class="text-base font-bold text-slate-300 mt-0.5" id="count-c">1</div>
+          </div>
+        </div>
+
+        <!-- 意向原则提示条与同步状态 -->
+        <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 text-[11px] text-indigo-200/90">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-arrows-rotate text-indigo-400 text-xs"></i>
+            <span id="sync-status-text">本机保存 · flomo 尚未接通</span>
+          </div>
+          <span id="sync-time-badge" class="text-[10px] text-slate-400">上次: 刚刚</span>
+        </div>
+
+        <!-- 卡片动态列表 -->
+        <div id="pipeline-list" class="space-y-3">
+          <!-- 由 JS 动态渲染各级别卡片 -->
+        </div>
+      </section>
+
+      <!-- TAB 3: 6 维意向点评估与复盘笔记 -->
+      <section id="tab-debrief" class="tab-pane hidden space-y-4"><h2 class="text-lg font-bold">评估复盘</h2><p class="text-xs text-slate-400">查看意向人的统计数据，右上角 ＋ 新增评估</p><div id="assessment-overview" class="space-y-3"></div></section>
+<section id="tab-statistics" class="tab-pane hidden space-y-4"><button onclick="switchTab('debrief')" class="text-sm text-indigo-300">← 返回评估复盘</button><h2 id="statistics-title" class="text-lg font-bold"></h2><select id="debrief-target-select" onchange="openStatistics(Number(this.value))" class="w-full bg-slate-900 p-3 rounded-xl"></select><div class="glass-card rounded-2xl p-5 space-y-4"><div class="flex justify-between items-center"><h3 class="font-bold">我的意向值</h3><strong id="intention-score-label" class="text-rose-300 text-xl"></strong></div><div id="intention-progress" role="progressbar" aria-label="已确认意向值" aria-valuemin="0" aria-valuemax="100" class="h-3 rounded-full bg-slate-800 overflow-hidden"><div id="intention-progress-fill" class="h-full rounded-full bg-gradient-to-r from-rose-500 to-indigo-500"></div></div><p class="text-xs text-slate-400">由你自己判断，输入 0–100 后点击确定。进度条展示已保存的数值。</p><label for="intention-score-input" class="block text-sm">意向值</label><div class="flex gap-3"><input id="intention-score-input" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="输入 0–100" class="min-w-0 flex-1 bg-slate-900 border border-slate-700 rounded-xl p-3"><button onclick="saveAssessment()" class="px-5 py-3 rounded-xl bg-rose-600">确定</button></div></div><h3 class="font-bold">数值记录</h3><div id="assessment-history" class="space-y-2"></div></section>
+
+      <!-- TAB 4: 话术库与 3F 实操 -->
+      <section id="tab-phrases" class="tab-pane hidden space-y-4"><h2 class="text-lg font-bold">我的笔记</h2><p class="text-xs text-slate-400">点击笔记编辑，右上角 ＋ 新增</p><div id="personal-notes-list" class="space-y-3"></div></section>
+
+    <section id="tab-preferences" class="tab-pane hidden space-y-4"><h2 class="text-lg font-bold">我的意向</h2><p class="text-xs text-slate-400">填写意向人的共性关键词，查看你的偏好排行。</p><div id="preference-ranking" class="space-y-2"></div><h3 class="font-bold">意向人关键词</h3><div id="preference-targets" class="space-y-3"></div><p class="text-xs text-slate-500">推荐值 = 拥有该关键词的人数 ÷ 总人数。每个人的同一关键词只计一次，数值越高表示共性越多。</p></section></main><div id="note-editor" role="dialog" aria-modal="true" aria-label="编辑笔记" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="glass-card rounded-2xl p-5 w-full max-w-sm space-y-4 max-h-[85dvh] overflow-y-auto"><h2 class="font-bold">编辑我的笔记</h2><label class="block text-sm">字段标签<input id="note-tag" placeholder="例如：开场语 / 避坑 / 边界" class="block w-full mt-2 p-3 bg-slate-900 rounded-xl"></label><label class="block text-sm">经验教训<textarea id="note-text" rows="7" placeholder="写下你自己的经验…" class="block w-full mt-2 p-3 bg-slate-900 rounded-xl"></textarea></label><button onclick="sendNoteToFlomo()" class="text-sm text-indigo-300">发送到 flomo</button><p class="text-xs text-slate-500">打开 flomo 待保存内容，尚未接通双向同步</p><div class="flex gap-3"><button onclick="closeNoteEditor()" class="flex-1 p-3 rounded-xl bg-slate-800">取消</button><button onclick="savePersonalNote()" class="flex-1 p-3 rounded-xl bg-rose-600">保存</button></div><button id="delete-note" onclick="deletePersonalNote()" class="text-sm text-rose-300">删除笔记</button></div></div>
+
+    <!-- Bottom Floating Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 glass-nav border-t border-white/10 px-3 py-2 flex justify-around items-center">
+      <button onclick="switchTab('pipeline')" id="nav-pipeline" class="nav-btn active flex flex-col items-center py-1 px-3 text-rose-400 transition">
+        <i class="fa-solid fa-list-ol text-base"></i>
+        <span class="text-[10px] mt-1 font-medium">意向排位</span>
+      </button>
+
+      <button onclick="switchTab('debrief')" id="nav-debrief" class="nav-btn flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition">
+        <i class="fa-solid fa-chart-pie text-base"></i>
+        <span class="text-[10px] mt-1 font-medium">评估复盘</span>
+      </button>
+
+      <button onclick="switchTab('phrases')" id="nav-phrases" class="nav-btn flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-200 transition">
+        <i class="fa-solid fa-triangle-exclamation text-base"></i>
+        <span class="text-[10px] mt-1 font-medium">我的笔记</span>
+      </button>
+    <button onclick="switchTab('preferences')" id="nav-preferences" class="nav-btn flex flex-col items-center py-1 px-3 text-slate-400"><i class="fa-solid fa-heart text-base"></i><span class="text-[10px] mt-1">我的意向</span></button></nav>
+
+    <div id="modal-add" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-sm rounded-3xl p-5 border border-white/15 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 class="text-sm font-bold text-slate-100 flex items-center space-x-2">
+            <i class="fa-solid fa-user-plus text-rose-400"></i>
+            <span>建立新约会意向档案</span>
+          </h3>
+          <button onclick="closeAddTargetModal()" class="text-slate-400 hover:text-white">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="text-slate-400 block mb-1">姓名 / 昵称备注</label>
+            <input id="input-name" type="text" placeholder="例如：安安 / 展厅相遇" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-rose-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-slate-400 block mb-1">初始排位分级</label>
+              <select id="input-tier" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-slate-200 outline-none focus:border-rose-500">
+                <option value="S">S 级 (核心意向)</option>
+                <option value="A" selected>A 级 (重点观察)</option>
+                <option value="B">B 级 (泛社交搭子)</option>
+                <option value="C">C 级 (降温止损)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-400 block mb-1">所属主圈子</label>
+              <select id="input-circle" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-slate-200 outline-none focus:border-rose-500">
+                <option value="户外搭子圈">户外搭子圈</option>
+                <option value="文艺策展圈" selected>文艺策展圈</option>
+                <option value="互联网科技圈">互联网科技圈</option>
+                <option value="学术留学圈">学术留学圈</option>
+                <option value="萌宠动物圈">萌宠动物圈</option>
+                <option value="美食精酿圈">美食精酿圈</option>
+                <option value="潮流二次元圈">潮流二次元圈</option>
+                <option value="传统相亲圈">传统相亲圈</option>
+                <option value="健身自律圈">健身自律圈</option>
+                <option value="身心疗愈圈">身心疗愈圈</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-slate-400 block mb-1">初次接触印象 / 细节备忘</label>
+            <input id="input-notes" type="text" placeholder="例如：审美同频，主动提前选好安静咖啡位" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <div class="pt-2 flex space-x-2">
+          <button onclick="closeAddTargetModal()" class="w-1/2 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium">取消</button>
+          <button onclick="submitNewTarget()" class="w-1/2 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-indigo-600 text-white text-xs font-semibold active-scale">确认加入 Social Girl</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ========== 全局状态与默认数据 ========== */
+    const STATE = {
+      activeTab: 'pipeline',
+      selectedCircleIndex: 0,
+      targets: [
+        {
+          id: 1,
+          name: "林语 (策展策划)",
+          tier: "S",
+          circle: "文艺策展圈",
+          energyScore: 92,
+          notes: "三观契合，主动聊童年书单，反馈极度舒适，未来投射度高",
+          radar: { emotion: 92, action: 90, value: 88, boundary: 95, energy: 94, future: 90 }
+        },
+        {
+          id: 2,
+          name: "陈亦 (户外徒步)",
+          tier: "A",
+          circle: "户外搭子圈",
+          energyScore: 84,
+          notes: "行动力极强，路线规划条理清晰，但情感自我暴露较少",
+          radar: { emotion: 70, action: 95, value: 82, boundary: 90, energy: 85, future: 75 }
+        },
+        {
+          id: 3,
+          name: "周明 (算法开发)",
+          tier: "A",
+          circle: "互联网科技圈",
+          energyScore: 78,
+          notes: "思维严密，偶尔略有工作说教感，但能自嘲化解",
+          radar: { emotion: 72, action: 85, value: 80, boundary: 82, energy: 76, future: 74 }
+        },
+        {
+          id: 4,
+          name: "沈舟 (精酿调酒师)",
+          tier: "B",
+          circle: "美食精酿圈",
+          energyScore: 68,
+          notes: "极佳的聚会玩伴，但时间碎片化，缺乏深度一对一联结",
+          radar: { emotion: 65, action: 60, value: 68, boundary: 75, energy: 72, future: 55 }
+        },
+        {
+          id: 5,
+          name: "赵越 (体制内相亲)",
+          tier: "C",
+          circle: "传统相亲圈",
+          energyScore: 42,
+          notes: "连续两次单向被动问答，查户口式聊天，约会耗能严重",
+          radar: { emotion: 35, action: 50, value: 45, boundary: 50, energy: 38, future: 30 }
+        }
+      ],
+      debriefNotes: [
+        {
+          id: 101,
+          targetName: "林语 (策展策划)",
+          date: "前天",
+          score: 92,
+          highlight: "用“哪个展品反差感最大”切入，激发了对方整整20分钟的策展幕后故事倾诉。",
+          pitfall: "探讨概念艺术时差点变学术辩论，及时靠分享'自己看不懂展品的尴尬经历'自嘲带过。"
+        },
+        {
+          id: 102,
+          targetName: "陈亦 (户外徒步)",
+          date: "上周末",
+          score: 84,
+          highlight: "探讨徒步是'身体放空还是刷成就感'，精准共鸣对方的逃离城市压力。",
+          pitfall: "对方提及昂贵冲锋衣品牌时未做评判，保持好奇倾听，对方表现出好感。"
+        }
+      ]
+    };
+
+    // 10 大细分圈子数据库
+    const CIRCLES_DATA = [
+      {
+        name: "户外搭子圈",
+        icon: "fa-mountain-sun",
+        tags: ["徒步", "露营", "骑行", "攀岩"],
+        vibe: "看重身体感知、逃离水泥丛林、行动力强、去繁就简。",
+        icebreaker: "“你最近常走哪条徒步路线？对你来说，户外更多是一种身体的放空，还是打卡新地形的探索欲？”",
+        deepTalk: "“在山里没有信号的时候，你心里第一反应是焦虑还是‘终于没人能找到我’的松弛？”",
+        pitfall: "忌过度炫耀顶级装备（始祖鸟/鸟人包袱），忌好为人师指导对方体能或步频姿势。"
+      },
+      {
+        name: "文艺策展圈",
+        icon: "fa-palette",
+        tags: ["独立电影", "黑胶", "当代艺术", "戏剧"],
+        vibe: "重感官体验、注重主观审美取向、对人际模式分寸感敏感。",
+        icebreaker: "“最近看的几个展或剧目里，有没有哪个细节给你的情绪后劲特别大？”",
+        deepTalk: "“如果用一种艺术风格或者一张专辑封面形容你今天的心情，你会挑哪张？”",
+        pitfall: "忌不懂装懂或过度搬弄深奥哲学名词；忌居高临下嘲讽他人的通俗爱好。"
+      },
+      {
+        name: "互联网科技圈",
+        icon: "fa-laptop-code",
+        tags: ["产品/研发", "AI探索", "数码极客", "效率控"],
+        vibe: "讲求逻辑闭环、新工具尝鲜、渴望反内卷与寻找精神自留地。",
+        icebreaker: "“最近各种 AI 工具爆炸更新，在你的工作或日常里，有没有哪款小众工具是你觉得离不开的‘神器’？”",
+        deepTalk: "“脱离工作语境之后，你最能‘关闭脑内代码’彻底放空的自愈方式是什么？”",
+        pitfall: "忌把约会变成工作周报会议或大厂职级、期权、KPI 的暗中攀比。"
+      },
+      {
+        name: "学术留学圈",
+        icon: "fa-graduation-cap",
+        tags: ["研博在读", "海归", "高校教师", "批判思维"],
+        vibe: "文化休克经历、幽默解构、对思想深度与尊重度要求高。",
+        icebreaker: "“在外生活/做研究那段时间，哪一个文化反差或者生活习惯是你现在想起来依然觉得很有意思的？”",
+        deepTalk: "“如果没有任何经费和现实压力，你最想花一年时间全心研究什么奇葩课题？”",
+        pitfall: "切勿追问对方发了多少篇顶刊 SCI，切勿把约会做成严肃答辩甚至对学术成果冷嘲热讽。"
+      },
+      {
+        name: "萌宠动物圈",
+        icon: "fa-paw",
+        tags: ["猫狗双全", "领养代替购买", "铲屎官", "毛孩子"],
+        vibe: "同理心强、生活注重日常陪伴、能迅速通过宠物话题建立信任。",
+        icebreaker: "“你家小家伙性格更像高冷的合租室友，还是黏人的小跟班？平时最让你哭笑不得的瞬间是什么？”",
+        deepTalk: "“养了它之后，你觉得自己性格里最大的改变是什么？”",
+        pitfall: "切勿评判对方喂粮/绝育理念，切勿挑刺品种纯度或表现出对小动物的不耐烦与厌弃。"
+      },
+      {
+        name: "美食精酿圈",
+        icon: "fa-wine-glass",
+        tags: ["特调咖啡", "精酿酒花", "深夜居酒屋", "味蕾探索"],
+        vibe: "对生活微小细节有仪式感、热爱发掘街巷隐藏宝藏。",
+        icebreaker: "“如果用一杯特调咖啡或一种精酿酒花的风味来形容你这周的状态，你会选什么味道？”",
+        deepTalk: "“去一座新城市，你更愿意跟着榜单打卡，还是自己一头扎进老居民区盲选小苍蝇馆子？”",
+        pitfall: "切勿像美食评委一样每道菜挑刺扫兴；切勿劝酒或强行灌输高端品鉴鄙视链。"
+      },
+      {
+        name: "潮流二次元圈",
+        icon: "fa-gamepad",
+        tags: ["ACG", "主机游戏", "潮玩", "Cosplay"],
+        vibe: "精神乌托邦、对作品世界观投入真挚、注重纯粹的情感共振。",
+        icebreaker: "“哪一部番剧或者单机剧情向游戏，是你哪怕隔几年翻出来看，依然会被震撼到的？”",
+        deepTalk: "“如果能在虚构的二次元/游戏世界里定居一个周末，你会选哪张地图当你的秘密基地？”",
+        pitfall: "切勿用‘这有什么实用价值’等功利说教去打击其爱好；尊重对方本命角色与同人文化。"
+      },
+      {
+        name: "传统相亲圈",
+        icon: "fa-handshake",
+        tags: ["体制内", "亲友介绍", "门当户对", "稳定规划"],
+        vibe: "注重家庭边界感、考量生活稳态与真实情绪自洽程度。",
+        icebreaker: "“大家都觉得相亲的节奏像按部就班走流程，但工作之外，你最不‘按部就班’的一面是什么？”",
+        deepTalk: "“在你看重的生活秩序里，你最希望保留哪一部分绝对自由的私人空间？”",
+        pitfall: "切勿一上来查户口式盘问房产车产、父母退休金与工资条；保持礼貌边界与对等尊重。"
+      },
+      {
+        name: "健身自律圈",
+        icon: "fa-dumbbell",
+        tags: ["CrossFit", "瑜伽", "力量训练", "高蛋白洁净饮食"],
+        vibe: "自控力强、对多巴胺与身体掌控力上瘾、看重精力管理。",
+        icebreaker: "“你觉得坚持运动最上瘾的时刻，是突破重量力竭那一刻，还是练完洗完澡那瞬间的放空感？”",
+        deepTalk: "“在高度自律和‘不管不顾暴饮暴食’之间，你平时怎么找到最舒适的平衡点？”",
+        pitfall: "切勿打听对方体脂率或发表体型容貌评判；切勿把对方的自律冷嘲为‘活得太累’。"
+      },
+      {
+        name: "身心疗愈圈",
+        icon: "fa-spa",
+        tags: ["冥想", "颂钵", "极简主义", "芳疗"],
+        vibe: "重视内在能量场、抵制过度内卷、追求身心合一与松弛感。",
+        icebreaker: "“平时生活节奏这么快，当你察觉到自己‘社交电量见底’时，你最有效的自我回血方式是什么？”",
+        deepTalk: "“过去一年里，你做过的哪一次‘断舍离’或做减法，让你觉得最轻松？”",
+        pitfall: "切勿将对方的心理探索戏谑为‘玄学神棍’，切忌用大男子/大女子实用主义强行解构对方感受。"
+      }
+    ];
+
+    // 精简后的话术与避坑数据：拒绝多层标签繁杂，直击实战痛点
+    const DATING_EXPERIENCE_DATA = {
+      openers: [
+        {
+          quote: "这家店的灯光比我想象的还要温和，背景音乐音量刚好。你平时选地方更看重环境氛围，还是先看招牌推荐？",
+          tip: "借环境破冰，抛出‘非对错’的低压选择，打破刚见面的局促感。"
+        },
+        {
+          quote: "看你今天选的配饰/包包搭配很有细节感，感觉你平时生活中也是个很有自己审美主张的人。",
+          tip: "夸赞主动审美与品味，远胜夸赞容貌，体现真诚观察力。"
+        },
+        {
+          quote: "刚才过来路上差点走岔，现实里看导航对我来说简直是抽象解谜——你方向感怎么样？",
+          tip: "暴露无伤大雅的微小自嘲与脆弱，能瞬间拉近陌生人距离。"
+        }
+      ],
+      pitfalls: [
+        {
+          pitfall: "查户口式拷问三连（住哪、年薪、父母退休金）",
+          consequence: "瞬间将轻松约会降维成公务员政审，引发对方防御心理与能量暴跌。",
+          remedy: "改为聊日常体验，例如‘平时周末不被打扰时，你最舒服的充电方式是什么？’"
+        },
+        {
+          pitfall: "好为人师 / 爹味纠错 / 强行科普专业术语",
+          consequence: "压制对方表达欲，直接被归类为自恋且难以相处的下等排位。",
+          remedy: "倾听多于输出，多用‘真的吗？当时是什么感觉？’引导对方分享故事。"
+        },
+        {
+          pitfall: "疯狂翻旧账、高频抱怨前任或沉迷吐槽工作琐事",
+          consequence: "向对方倾倒情绪垃圾，散发出沉重的负能量怨气。",
+          remedy: "初次约会严格恪守边界，聚焦当下美食、兴趣与未来的趣味可能。"
+        }
+      ],
+      failures: [
+        {
+          lesson: "不要对‘单向回复、连续两次改约无补偿’的人抱有幻想",
+          action: "果断将其降至 C 级并体面淡出，省下高能量优先供给 S/A 级对象。"
+        },
+        {
+          lesson: "约会切忌时长拉满 6 小时以上导致疲惫感透支",
+          action: "初次见面严格控制在 1.5 - 2 小时，在氛围最好的高潮点主动体面收尾，留足期待感。"
+        },
+        {
+          lesson: "过度迎合对方喜好而完全伪装自己，最终必然崩盘",
+          action: "温和坚持自己的真实边界与喜好，同频是筛选出来的，不是讨好出来的。"
+        }
+      ]
+    };
+
+    // 6 维度意向评估触点定义
+    const DIMENSIONS = [
+      { key: 'emotion', label: '情绪投入度', desc: '主动提问、敞开心扉与分享脆弱' },
+      { key: 'action', label: '行动兑现率', desc: '准时、履约确定性与改约补偿意愿' },
+      { key: 'value', label: '价值对齐度', desc: '金钱观、作息节奏与深层理念共振' },
+      { key: 'boundary', label: '社交边界感', desc: '分寸感、尊重隐私且不过界' },
+      { key: 'energy', label: '能量回馈感', desc: '约会后感觉自己是被赋能还是耗竭' },
+      { key: 'future', label: '未来投射度', desc: '言语中自然出现“下次我们”的倾向' },
+    ];
+
+    let currentRadarValues = {
+      emotion: 85,
+      action: 90,
+      value: 80,
+      boundary: 92,
+      energy: 88,
+      future: 82
+    };
+
+    let activePreviewTargetId = null;
+  </script>
+
+  <script>
+    /* ========== 视图切换与导航控制 ========== */
+    function switchTab(tabId) {
+      STATE.activeTab = tabId;
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      const activeEl = document.getElementById(`tab-${tabId}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      // 更新底栏高亮
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-rose-400', 'active');
+        btn.classList.add('text-slate-400');
+      });
+      const currentNav = document.getElementById(`nav-${tabId}`);
+      if (currentNav) {
+        currentNav.classList.add('text-rose-400', 'active');
+        currentNav.classList.remove('text-slate-400');
+      }
+
+      // 如果切到复盘，重绘雷达
+      if (tabId === 'debrief') {
+        setTimeout(drawRadarChart, 50);
+      }
+    }
+
+    /* ========== 模块一：意向排位渲染与上下排序 ========== */
+    function renderPipeline() {
+      const container = document.getElementById('pipeline-list');
+      if (!container) return;
+
+      // 统计数字
+      const counts = { S: 0, A: 0, B: 0, C: 0 };
+      STATE.targets.forEach(t => {
+        if (counts[t.tier] !== undefined) counts[t.tier]++;
+      });
+      document.getElementById('count-s').innerText = counts.S;
+      document.getElementById('count-a').innerText = counts.A;
+      document.getElementById('count-b').innerText = counts.B;
+      document.getElementById('count-c').innerText = counts.C;
+
+      const tierConfig = {
+        S: { label: 'S 级 · 核心意向', desc: '双向奔赴 / 高能量回馈优先倾斜', color: 'rose', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+        A: { label: 'A 级 · 重点观察', desc: '闪光点显著 / 待多场景边界验证', color: 'indigo', badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
+        B: { label: 'B 级 · 泛社交/搭子', desc: '舒适无压力 / 缺乏深度恋爱张力', color: 'amber', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+        C: { label: 'C 级 · 降温止损', desc: '沟通耗能 / 单向索取 / 体面淡化', color: 'slate', badge: 'bg-slate-700/40 text-slate-400 border-slate-600/30' }
+      };
+
+      let html = '';
+
+      ['S', 'A', 'B', 'C'].forEach(tierKey => {
+        const conf = tierConfig[tierKey];
+        const group = STATE.targets.filter(item => item.tier === tierKey);
+
+        html += `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full border ${conf.badge}">${conf.label}</span>
+              <span class="text-[10px] text-slate-500">${conf.desc}</span>
+            </div>
+        `;
+
+        if (group.length === 0) {
+          html += `
+            <div class="p-3 text-center rounded-2xl border border-dashed border-white/5 text-[11px] text-slate-600">
+              暂无 ${tierKey} 级档案
+            </div>
+          `;
+        } else {
+          group.forEach(item => {
+          const globalIndex = STATE.targets.findIndex(t => t.id === item.id);
+          html += `
+            <div class="glass-card rounded-2xl p-3.5 border border-white/10 hover:border-rose-500/30 transition flex flex-col space-y-2.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center font-bold text-xs text-rose-300">
+                    ${item.name.slice(0, 1)}
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-100 flex items-center space-x-1.5">
+                      <span>${item.name}</span>
+                      <span class="text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">${item.circle}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${item.notes}</div>
+                  </div>
+                </div>
+
+                <!-- 上下排行控制按钮 -->
+                <div class="flex items-center space-x-1">
+                  <button onclick="moveRank(${globalIndex}, -1)" title="上移排位" class="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-slate-300 text-[10px] active-scale">
+                    <i class="fa-solid fa-chevron-up"></i>
+                  </button>
+                  <button onclick="moveRank(${globalIndex}, 1)" title="下移排位" class="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/15 flex items-center justify-center text-slate-300 text-[10px] active-scale">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 底部能量与直接 Canvas 预览入口 -->
+              <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-white/5">
+                <div class="flex items-center space-x-2">
+                  <span class="text-slate-400 text-[10px]">意向值:</span>
+                  <div class="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-rose-500 to-indigo-500 rounded-full" style="width: ${item.energyScore ?? 0}%"></div>
+                  </div>
+                  <span class="font-bold text-[10px] text-slate-300">${item.energyScore === null ? '待填写' : item.energyScore + '分'}</span>
+                </div>
+
+                <div class="flex items-center space-x-2.5 text-[10px]">
+                  <!-- 直接 Canvas 预览按钮 -->
+                  <button onclick="openRadarPreviewModal(${item.id})" class="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 flex items-center space-x-1 active-scale border border-indigo-500/30">
+                    <i class="fa-solid fa-chart-simple text-[9px]"></i>
+                    <span>查看意向值</span>
+                  </button>
+                  <button onclick="deleteTarget(${item.id})" class="text-slate-500 hover:text-rose-400">
+                    <i class="fa-solid fa-trash-can text-[9px]"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      html += `</div>`;
+    });
+
+    container.innerHTML = html;
+    updateDebriefSelect();
+  }
+
+    // 上下移动排序逻辑
+    function moveRank(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= STATE.targets.length) {
+        showToast("已位于该方向最顶/底部", "fa-circle-info", "text-amber-400");
+        return;
+      }
+
+      // 交换位置
+      const temp = STATE.targets[index];
+      STATE.targets[index] = STATE.targets[targetIndex];
+      STATE.targets[targetIndex] = temp;
+
+      // 如果跨越了等级，按新位置对应相邻卡片的等级同步调整
+      STATE.targets[targetIndex].tier = STATE.targets[index].tier;
+
+      renderPipeline();
+      showToast(`已重新排列【${temp.name}】的意向位阶`);
+    }
+
+    function quickInspect(id) {
+      const item = STATE.targets.find(t => t.id === id);
+      if (!item) return;
+      currentRadarValues = { ...item.radar };
+      switchTab('debrief');
+      document.getElementById('debrief-target-select').value = item.id;
+      renderDimensionSliders();
+      drawRadarChart();
+      showToast(`已加载【${item.name}】的 6 维意向触点`);
+    }
+
+    /* ========== 直接 Canvas 预览弹窗控制逻辑 ========== */
+    function openRadarPreviewModal(targetId) {
+      const item = STATE.targets.find(t => t.id === targetId);
+      if (!item) return;
+      activePreviewTargetId = targetId;
+
+      document.getElementById('preview-target-name').innerText = `${item.name} · 雷达图谱`;
+      document.getElementById('preview-target-tier').innerText = `${item.tier} 级意向 · 所属${item.circle} · 综合 ${item.energyScore} 分`;
+
+      // 填充 6 维网格指标
+      const grid = document.getElementById('preview-dimensions-grid');
+      if (grid) {
+        grid.innerHTML = DIMENSIONS.map(d => `
+          <div class="bg-black/30 p-1.5 rounded-xl border border-white/5">
+            <div class="text-slate-400 scale-90">${d.label}</div>
+            <div class="text-rose-300 font-bold mt-0.5">${item.radar[d.key] || 75}%</div>
+          </div>
+        `).join('');
+      }
+
+      const modal = document.getElementById('modal-radar-preview');
+      modal.classList.remove('hidden');
+
+      // 即时绘制该对象的独立 Canvas 雷达图
+      setTimeout(() => {
+        drawSpecificRadarChart('quickRadarCanvas', item.radar);
+      }, 50);
+    }
+
+    function closeRadarPreviewModal() {
+      document.getElementById('modal-radar-preview').classList.add('hidden');
+      activePreviewTargetId = null;
+    }
+
+    function goToDebriefFromPreview() {
+      if (!activePreviewTargetId) return;
+      const targetId = activePreviewTargetId;
+      closeRadarPreviewModal();
+      quickInspect(targetId);
+    }
+
+    // 绘制任意特定 Canvas 元素与雷达值的通用绘图函数
+    function drawSpecificRadarChart(canvasId, valuesObj) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const radius = Math.min(centerX, centerY) - 34;
+      const totalSides = DIMENSIONS.length;
+      const angleStep = (Math.PI * 2) / totalSides;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. 同心多边形网格
+      ctx.lineWidth = 1;
+      for (let level = 1; level <= 3; level++) {
+        const r = (radius / 3) * level;
+        ctx.beginPath();
+        for (let i = 0; i < totalSides; i++) {
+          const angle = i * angleStep - Math.PI / 2;
+          const x = centerX + Math.cos(angle) * r;
+          const y = centerY + Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.stroke();
+      }
+
+      // 2. 轴线与文字标签
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 0; i < totalSides; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.stroke();
+
+        const labelX = centerX + Math.cos(angle) * (radius + 16);
+        const labelY = centerY + Math.sin(angle) * (radius + 12);
+        ctx.fillText(DIMENSIONS[i].label, labelX, labelY);
+      }
+
+      // 3. 用户多边形数据面
+      ctx.beginPath();
+      for (let i = 0; i < totalSides; i++) {
+        const key = DIMENSIONS[i].key;
+        const valRatio = (valuesObj[key] || 50) / 100;
+        const r = radius * valRatio;
+        const angle = i * angleStep - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+
+      const gradient = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius);
+      gradient.addColorStop(0, 'rgba(244, 63, 94, 0.5)');
+      gradient.addColorStop(1, 'rgba(99, 102, 241, 0.2)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f43f5e';
+      ctx.stroke();
+
+      // 触点高光圆点
+      for (let i = 0; i < totalSides; i++) {
+        const key = DIMENSIONS[i].key;
+        const valRatio = (valuesObj[key] || 50) / 100;
+        const r = radius * valRatio;
+        const angle = i * angleStep - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#f43f5e';
+        ctx.stroke();
+      }
+    }
+
+    function deleteTarget(id) {
+      STATE.targets = STATE.targets.filter(t => t.id !== id);
+      renderPipeline();
+      showToast("已移出意向雷达", "fa-trash-can", "text-rose-400");
+    }
+  </script>
+
+  <script>
+    /* ========== 模块二：10 大圈子交互渲染 ========== */
+    function renderCircleView() {
+      const chipsContainer = document.getElementById('circle-chips');
+      if (!chipsContainer) return;
+
+      chipsContainer.innerHTML = CIRCLES_DATA.map((c, idx) => {
+        const isSelected = idx === STATE.selectedCircleIndex;
+        return `
+          <button onclick="selectCircle(${idx})" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition ${
+            isSelected 
+              ? 'bg-gradient-to-r from-rose-500 to-indigo-600 text-white shadow-md shadow-rose-500/20' 
+              : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+          }">
+            <i class="fa-solid ${c.icon} mr-1 text-[10px]"></i>
+            ${c.name}
+          </button>
+        `;
+      }).join('');
+
+      renderCircleDetail();
+    }
+
+    function selectCircle(idx) {
+      STATE.selectedCircleIndex = idx;
+
+    }
+
+    function renderCircleDetail() {
+      const card = document.getElementById('circle-detail-card');
+      const data = CIRCLES_DATA[STATE.selectedCircleIndex];
+      if (!card || !data) return;
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between border-b border-white/5 pb-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center">
+              <i class="fa-solid ${data.icon}"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-100">${data.name}</h3>
+              <p class="text-[10px] text-slate-400">${data.tags.map(t => '#' + t).join(' ')}</p>
+            </div>
+          </div>
+          <span class="text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">圈层语境</span>
+        </div>
+
+        <div class="text-xs text-slate-300 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
+          <strong class="text-slate-200">圈层调性：</strong>${data.vibe}
+        </div>
+
+        <div class="space-y-3 pt-1">
+          <!-- 破冰示范 -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-rose-300 flex items-center space-x-1">
+                <i class="fa-solid fa-bolt text-[10px]"></i>
+                <span>破冰与开场暗号</span>
+              </span>
+              <button onclick="copyText('${data.icebreaker.replace(/"/g, '&quot;')}')" class="text-[10px] text-rose-400 hover:text-rose-300 flex items-center space-x-0.5 active-scale">
+                <i class="fa-regular fa-copy"></i>
+                <span>复制话术</span>
+              </button>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-xs text-slate-200 leading-relaxed italic">
+              ${data.icebreaker}
+            </div>
+          </div>
+
+          <!-- 深度延展 -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-indigo-300 flex items-center space-x-1">
+                <i class="fa-solid fa-heart-pulse text-[10px]"></i>
+                <span>深度生活切入点</span>
+              </span>
+              <button onclick="copyText('${data.deepTalk.replace(/"/g, '&quot;')}')" class="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center space-x-0.5 active-scale">
+                <i class="fa-regular fa-copy"></i>
+                <span>复制话术</span>
+              </button>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-xs text-slate-200 leading-relaxed italic">
+              ${data.deepTalk}
+            </div>
+          </div>
+
+          <!-- 避坑雷区 -->
+          <div class="p-2.5 rounded-xl bg-rose-950/20 border border-rose-500/20 space-y-1">
+            <span class="text-[10px] font-bold text-rose-400 flex items-center space-x-1">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span>该圈层交流禁忌 / 严防踩雷</span>
+            </span>
+            <p class="text-[11px] text-rose-200/90 leading-relaxed">
+              ${data.pitfall}
+            </p>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+
+  <script>
+    /* ========== 模块三：6维意向点与 HTML5 Canvas 雷达图 ========== */
+    function renderDimensionSliders() {
+      const container = document.getElementById('dimension-sliders');
+      if (!container) return;
+
+      container.innerHTML = DIMENSIONS.map(dim => {
+        const val = currentRadarValues[dim.key] || 75;
+        return `
+          <div class="space-y-1">
+            <div class="flex justify-between items-center text-xs">
+              <div>
+                <span class="font-medium text-slate-200">${dim.label}</span>
+                <span class="text-[10px] text-slate-500 ml-1">(${dim.desc})</span>
+              </div>
+              <span class="font-bold text-rose-400 text-xs" id="val-${dim.key}">${val}%</span>
+            </div>
+            <input type="range" min="20" max="100" value="${val}" 
+              oninput="updateDimension('${dim.key}', this.value)"
+              class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
+          </div>
+        `;
+      }).join('');
+
+      updateRadarTotalScore();
+    }
+
+    function updateDimension(key, value) {
+      currentRadarValues[key] = parseInt(value, 10);
+      const label = document.getElementById(`val-${key}`);
+      if (label) label.innerText = `${value}%`;
+      drawRadarChart();
+      updateRadarTotalScore();
+    }
+
+    function updateRadarTotalScore() {
+      const values = Object.values(currentRadarValues);
+      const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      const badge = document.getElementById('radar-score-badge');
+      if (badge) {
+        let level = 'S / 极优同频';
+        let colorClass = 'text-rose-400';
+        if (avg < 55) { level = 'C / 严重耗能'; colorClass = 'text-slate-400'; }
+        else if (avg < 75) { level = 'B / 平稳搭子'; colorClass = 'text-amber-400'; }
+        else if (avg < 88) { level = 'A / 值得深耕'; colorClass = 'text-indigo-400'; }
+
+        badge.className = `text-[10px] font-bold ${colorClass}`;
+        badge.innerText = `综合指数: ${avg}分 · ${level}`;
+      }
+    }
+
+    // 绘制 6 边形雷达图
+    function drawRadarChart() {
+      drawSpecificRadarChart('radarChart', currentRadarValues);
+    }
+
+    function updateDebriefSelect() {
+      const select = document.getElementById('debrief-target-select');
+      if (!select) return;
+      select.innerHTML = STATE.targets.map(t => `
+        <option value="${t.id}">${t.name} · [${t.tier}级] (${t.circle})</option>
+      `).join('');
+    }
+
+    function saveDebriefNote() {
+      const targetId = parseInt(document.getElementById('debrief-target-select').value, 10);
+      const target = STATE.targets.find(t => t.id === targetId);
+      const highlight = document.getElementById('debrief-highlight').value.trim();
+      const pitfall = document.getElementById('debrief-pitfall').value.trim();
+
+      if (!target) {
+        showToast("请先选择关联的约会对象", "fa-circle-exclamation", "text-amber-400");
+        return;
+      }
+      if (!highlight && !pitfall) {
+        showToast("请至少填写一项高光或踩雷记录", "fa-circle-exclamation", "text-amber-400");
+        return;
+      }
+
+      // 更新目标对象的雷达值和能量分
+      target.radar = { ...currentRadarValues };
+      const avg = Math.round(Object.values(currentRadarValues).reduce((a, b) => a + b, 0) / 6);
+      target.energyScore = avg;
+
+      // 智能分级调整提醒
+      if (avg >= 88 && target.tier !== 'S') {
+        target.tier = 'S';
+        showToast(`综合评分达标！已将【${target.name}】晋升至 S 级`);
+      } else if (avg < 55 && target.tier !== 'C') {
+        target.tier = 'C';
+        showToast(`检测到耗能信号，已将【${target.name}】调整至 C 级`);
+      } else {
+        showToast("复盘已归档，目标雷达触点已同步更新");
+      }
+
+      STATE.debriefNotes.unshift({
+        id: Date.now(),
+        targetName: target.name,
+        date: "刚刚",
+        score: avg,
+        highlight: highlight || "未记录明显高光点",
+        pitfall: pitfall || "全程舒适无明显雷区"
+      });
+
+      document.getElementById('debrief-highlight').value = '';
+      document.getElementById('debrief-pitfall').value = '';
+
+      renderPipeline();
+      renderDebriefHistory();
+    }
+
+    function renderDebriefHistory() {
+      const container = document.getElementById('debrief-history-list');
+      if (!container) return;
+
+      container.innerHTML = STATE.debriefNotes.map(item => `
+        <div class="glass-card p-3 rounded-2xl border border-white/5 space-y-1.5 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-200">${item.targetName}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] text-slate-500">${item.date}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">${item.score}分</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-emerald-300/90 leading-relaxed">
+            <strong class="text-emerald-400">高光：</strong>${item.highlight}
+          </p>
+          <p class="text-[11px] text-rose-300/90 leading-relaxed">
+            <strong class="text-rose-400">踩雷：</strong>${item.pitfall}
+          </p>
+        </div>
+      `).join('');
+    }
+  </script>
+
+  <script>
+    /* ========== 模块四：精简话术、踩坑与失败经验渲染 ========== */
+    function renderDatingExperience() {
+      // 1. 渲染开场白
+      const openersContainer = document.getElementById('openers-list');
+      if (openersContainer) {
+        openersContainer.innerHTML = DATING_EXPERIENCE_DATA.openers.map((item, idx) => `
+          <div class="glass-card p-3 rounded-2xl border border-white/10 space-y-2">
+            <div class="flex items-start justify-between space-x-2">
+              <p class="text-xs text-slate-200 leading-relaxed italic">“${item.quote}”</p>
+              <button onclick="copyText('${item.quote.replace(/"/g, '&quot;')}')" class="text-[10px] text-rose-400 hover:text-rose-300 shrink-0 flex items-center space-x-0.5 active-scale bg-rose-500/10 px-2 py-1 rounded-lg border border-rose-500/20">
+                <i class="fa-regular fa-copy"></i>
+                <span>复制</span>
+              </button>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center space-x-1 border-t border-white/5 pt-1.5">
+              <i class="fa-solid fa-lightbulb text-indigo-400 text-[10px]"></i>
+              <span>${item.tip}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 2. 渲染约会踩坑
+      const pitfallsContainer = document.getElementById('pitfalls-list');
+      if (pitfallsContainer) {
+        pitfallsContainer.innerHTML = DATING_EXPERIENCE_DATA.pitfalls.map(item => `
+          <div class="glass-card p-3 rounded-2xl border border-amber-500/20 bg-amber-950/10 space-y-1.5">
+            <div class="text-xs font-bold text-amber-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-ban text-amber-400 text-xs"></i>
+              <span>${item.pitfall}</span>
+            </div>
+            <div class="text-[11px] text-slate-300/90 leading-relaxed">
+              <span class="text-rose-400 font-semibold">严重后果：</span>${item.consequence}
+            </div>
+            <div class="text-[10px] text-emerald-300/90 bg-emerald-950/30 p-2 rounded-xl border border-emerald-500/20">
+              <span class="font-bold text-emerald-400">正确破局法：</span>${item.remedy}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 3. 渲染失败经验
+      const failuresContainer = document.getElementById('failures-list');
+      if (failuresContainer) {
+        failuresContainer.innerHTML = DATING_EXPERIENCE_DATA.failures.map(item => `
+          <div class="glass-card p-3 rounded-2xl border border-rose-500/20 bg-rose-950/10 space-y-1.5">
+            <div class="text-xs font-bold text-rose-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-heart-crack text-rose-400 text-xs"></i>
+              <span>血泪教训：${item.lesson}</span>
+            </div>
+            <div class="text-[10px] text-indigo-200/90 bg-indigo-950/40 p-2 rounded-xl border border-indigo-500/20">
+              <span class="font-bold text-indigo-300">雷达行动法案：</span>${item.action}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  </script>
+
+  <script>
+    /* ========== 数据同步：只做【拉取】与【推送】 ========== */
+    // 模拟远端云端存储镜像
+    let MOCK_CLOUD_STORAGE = null;
+
+    function handlePullData() {
+      const pullIcon = document.getElementById('pull-icon');
+      const statusText = document.getElementById('sync-status-text');
+      const timeBadge = document.getElementById('sync-time-badge');
+
+      // 动画状态反馈
+      pullIcon.classList.add('animate-spin');
+      showToast("正在读取模拟备份...", "fa-cloud-arrow-down", "text-indigo-400");
+
+      setTimeout(() => {
+        pullIcon.classList.remove('animate-spin');
+
+        if (MOCK_CLOUD_STORAGE && MOCK_CLOUD_STORAGE.targets) {
+          // 深度同步拉取数据
+          STATE.targets = JSON.parse(JSON.stringify(MOCK_CLOUD_STORAGE.targets));
+          if (MOCK_CLOUD_STORAGE.debriefNotes) {
+            STATE.debriefNotes = JSON.parse(JSON.stringify(MOCK_CLOUD_STORAGE.debriefNotes));
+          }
+          renderPipeline();
+          renderDebriefHistory();
+          showToast(`拉取成功！已同步 ${STATE.targets.length} 条对象档案`, "fa-circle-check", "text-emerald-400");
+        } else {
+          showToast("当前没有模拟备份，请先点击推送", "fa-circle-check", "text-indigo-400");
+        }
+
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        statusText.innerText = "模拟备份已读取 · 未接通 flomo";
+        timeBadge.innerText = `拉取于 ${timeStr}`;
+      }, 700);
+    }
+
+    function handlePushData() {
+      const pushIcon = document.getElementById('push-icon');
+      const statusText = document.getElementById('sync-status-text');
+      const timeBadge = document.getElementById('sync-time-badge');
+
+      // 动画状态反馈
+      pushIcon.classList.add('animate-bounce');
+      showToast("正在保存模拟备份...", "fa-cloud-arrow-up", "text-rose-400");
+
+      setTimeout(() => {
+        pushIcon.classList.remove('animate-bounce');
+
+        // 保存镜像快照
+        MOCK_CLOUD_STORAGE = {
+          timestamp: Date.now(),
+          targets: JSON.parse(JSON.stringify(STATE.targets)),
+          debriefNotes: JSON.parse(JSON.stringify(STATE.debriefNotes))
+        };
+
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+        statusText.innerText = "模拟备份已保存 · 未接通 flomo";
+        timeBadge.innerText = `推送于 ${timeStr}`;
+
+        showToast(`推送成功！已备份 ${STATE.targets.length} 个意向档案`, "fa-circle-check", "text-emerald-400");
+      }, 600);
+    }
+
+    /* ========== 通用工具：剪贴板复制、Toast 与弹窗 ========== */
+    function showToast(msg, icon = 'fa-circle-check', iconColor = 'text-emerald-400') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = msg;
+      toastIcon.className = `fa-solid ${icon} ${iconColor}`;
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2200);
+    }
+
+    function copyText(text) {
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('话术已成功复制到剪贴板！');
+      } catch (err) {
+        showToast('复制失败，请手动长按复制', 'fa-circle-xmark', 'text-rose-400');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function openAddTargetModal() {
+      document.getElementById('modal-add').classList.remove('hidden');
+    }
+
+    function closeAddTargetModal() {
+      document.getElementById('modal-add').classList.add('hidden');
+    }
+
+    function submitNewTarget() {
+      const name = document.getElementById('input-name').value.trim();
+      const tier = document.getElementById('input-tier').value;
+      const circle = document.getElementById('input-circle').value;
+      const notes = document.getElementById('input-notes').value.trim() || '初次建档，待实战复盘验证';
+
+      if (!name) {
+        showToast('请输入姓名或昵称备注', 'fa-circle-exclamation', 'text-amber-400');
+        return;
+      }
+
+      const initialScore = tier === 'S' ? 90 : (tier === 'A' ? 80 : (tier === 'B' ? 65 : 45));
+
+      STATE.targets.unshift({
+        id: Date.now(),
+        name,
+        tier,
+        circle,
+        energyScore: null,
+        notes,
+        radar: {
+          emotion: initialScore,
+          action: initialScore,
+          value: initialScore,
+          boundary: 85,
+          energy: initialScore,
+          future: initialScore
+        }
+      });
+
+      document.getElementById('input-name').value = '';
+      document.getElementById('input-notes').value = '';
+      closeAddTargetModal();
+      renderPipeline();
+      showToast(`已成功录入【${name}】至 ${tier} 级意向看板`);
+    }
+
+    // 手机预览仅保留少量虚构示例；同步仍为原文件的本地演示。
+    STATE.targets = STATE.targets.filter(t => [1, 2, 3].includes(t.id));
+    STATE.debriefNotes = STATE.debriefNotes.slice(0, 1);
+    const retainedCircles = CIRCLES_DATA.filter(c => ['户外搭子圈', '文艺策展圈', '互联网科技圈', '美食精酿圈'].includes(c.name));
+    CIRCLES_DATA.splice(0, CIRCLES_DATA.length, ...retainedCircles);
+    CIRCLES_DATA.forEach(c => { c.tags = c.tags.slice(0, 2); });
+    Object.keys(DATING_EXPERIENCE_DATA).forEach(k => { DATING_EXPERIENCE_DATA[k] = DATING_EXPERIENCE_DATA[k].slice(0, 2); });
+    document.getElementById('input-circle').innerHTML = CIRCLES_DATA.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    const previewStorageKey = 'social-girl-mobile-demo-v1';
+    try {
+      const saved = JSON.parse(localStorage.getItem(previewStorageKey) || 'null');
+      if (saved && Array.isArray(saved.targets) && Array.isArray(saved.debriefNotes)) {
+        STATE.targets = saved.targets;
+        STATE.debriefNotes = saved.debriefNotes;
+      }
+    } catch (_) { /* 文件浏览器不支持存储时，继续提供内存演示。 */ }
+    function savePreviewState() {
+      try { localStorage.setItem(previewStorageKey, JSON.stringify({ targets: STATE.targets, debriefNotes: STATE.debriefNotes })); } catch (_) {}
+    }
+    document.addEventListener('click', () => setTimeout(savePreviewState, 1800));
+    window.addEventListener('pagehide', savePreviewState);
+
+    // 个人记录与统计：所有编辑由用户输入。
+    let personalNotes = [];
+    let assessmentRecords = [];
+    try {
+      personalNotes = JSON.parse(localStorage.getItem('social-girl-notes-v1') || '[]');
+      assessmentRecords = JSON.parse(localStorage.getItem('social-girl-assessments-v1') || '[]');
+    } catch (_) {}
+    const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let editingNoteId = null;
+    function persistPersonalData() {
+      savePreviewState();
+      try {
+        localStorage.setItem('social-girl-notes-v1', JSON.stringify(personalNotes));
+        localStorage.setItem('social-girl-assessments-v1', JSON.stringify(assessmentRecords));
+      } catch (_) { showToast('当前浏览器无法保存，记录仅在本次打开有效'); }
+    }
+    function renderPersonalNotes() {
+      const container = document.getElementById('personal-notes-list');
+      container.innerHTML = personalNotes.length ? personalNotes.map(n => '<button onclick="editPersonalNote('+n.id+')" class="glass-card w-full text-left p-4 rounded-2xl"><div class="text-xs text-indigo-300 mb-2">字段标签 · '+escapeHtml(n.tag)+'</div><div class="font-bold text-sm mb-2">经验教训</div><p class="text-sm text-slate-300 whitespace-pre-wrap break-words">'+escapeHtml(n.text)+'</p><div class="text-xs text-slate-500 mt-3">点击编辑</div></button>').join('') : '<div class="glass-card rounded-2xl p-6 text-sm text-slate-400">还没有笔记。点击右上角 ＋，写下自己的开场语、避坑经验或教训。</div>';
+    }
+    function editPersonalNote(id=null) {
+      editingNoteId=id;
+      const note=personalNotes.find(n=>n.id===id);
+      document.getElementById('note-tag').value=note?.tag || '';
+      document.getElementById('note-text').value=note?.text || '';
+      document.getElementById('delete-note').hidden=!note;
+      document.getElementById('note-editor').classList.remove('hidden');
+      document.getElementById('note-text').focus();
+    }
+    function closeNoteEditor() { document.getElementById('note-editor').classList.add('hidden'); }
+    function savePersonalNote() {
+      const tag=document.getElementById('note-tag').value.trim();
+      const text=document.getElementById('note-text').value.trim();
+      if (!tag || !text) return showToast('请填写字段标签和经验教训');
+      if(editingNoteId!==null) { const n=personalNotes.find(n=>n.id===editingNoteId); Object.assign(n,{tag,text}); }
+      else personalNotes.unshift({id:Date.now(),tag,text});
+      persistPersonalData(); renderPersonalNotes(); closeNoteEditor(); showToast('笔记已保存');
+    }
+    function deletePersonalNote() { personalNotes=personalNotes.filter(n=>n.id!==editingNoteId); persistPersonalData();renderPersonalNotes();closeNoteEditor(); }
+    function renderAssessmentOverview() {
+      document.getElementById('assessment-overview').innerHTML=STATE.targets.map(t=>'<button onclick="openStatistics('+t.id+')" class="glass-card w-full p-4 rounded-2xl text-left"><div class="flex justify-between"><strong>'+escapeHtml(t.name)+'</strong><span class="text-rose-300">'+t.energyScore+' 分</span></div><p class="text-xs text-slate-400 mt-2">'+assessmentRecords.filter(r=>r.targetId===t.id).length+' 次个人评估 · 查看意向值 →</p></button>').join('') || '<p class="text-slate-400">先在意向排位添加一个意向人。</p>';
+    }
+    function openStatistics(id) {
+      const t=STATE.targets.find(t=>t.id===id); if(!t) return showToast('请先在意向排位添加意向人');
+      switchTab('statistics'); updateDebriefSelect();
+      document.getElementById('debrief-target-select').value=id;
+      document.getElementById('statistics-title').textContent=t.name+' · 意向值';
+      const score=Number.isFinite(t.energyScore) ? Math.min(100, Math.max(0,t.energyScore)) : null;
+      document.getElementById('intention-score-input').value=score ?? '';
+      document.getElementById('intention-score-label').textContent=score===null ? '待填写' : score+' / 100';
+      document.getElementById('intention-progress-fill').style.width=(score ?? 0)+'%';
+      const bar=document.getElementById('intention-progress');
+      if(score===null) bar.removeAttribute('aria-valuenow'); else bar.setAttribute('aria-valuenow',score);
+      document.getElementById('assessment-history').innerHTML=assessmentRecords.filter(r=>r.targetId===id).map(r=>'<div class="glass-card p-3 rounded-xl text-sm flex justify-between"><span>'+escapeHtml(r.date)+'</span><strong class="text-rose-300">'+r.score+' / 100</strong></div>').join('') || '<p class="text-xs text-slate-400">暂无个人数值记录。</p>';
+      window.scrollTo(0,0);
+    }
+    function saveAssessment() {
+      const input=document.getElementById('intention-score-input');
+      const raw=input.value.trim(); const score=Number(raw);
+      if(raw==='' || !Number.isFinite(score) || !Number.isInteger(score) || score<0 || score>100) { showToast('请输入 0–100 的整数');input.focus();return; }
+      const id=Number(document.getElementById('debrief-target-select').value);
+      const t=STATE.targets.find(t=>t.id===id); if(!t) return;
+      t.energyScore=score;
+      assessmentRecords.unshift({targetId:id,date:new Date().toLocaleString('zh-CN'),score});
+      persistPersonalData();renderPipeline();openStatistics(id);showToast('意向值已保存');
+    }
+    function handleContextAdd() {
+      if(STATE.activeTab==='pipeline') openAddTargetModal();
+      else if(STATE.activeTab==='phrases') editPersonalNote();
+      else if(STATE.activeTab==='statistics') { document.getElementById('intention-score-input').focus(); showToast('输入意向值后点击确定'); }
+      else openStatistics(STATE.targets[0]?.id);
+    }
+    const baseSwitchTab=switchTab;
+    switchTab=function(tabId) {
+      baseSwitchTab(tabId);
+      const btn=document.getElementById('context-add');
+      const title=tabId==='pipeline'?'添加意向人':tabId==='phrases'?'添加笔记':'新增评估';
+      btn.title=title;btn.setAttribute('aria-label',title);
+      if(tabId==='phrases') renderPersonalNotes();
+      if(tabId==='debrief') renderAssessmentOverview();
+      if(tabId==='statistics') document.getElementById('nav-debrief').classList.add('text-rose-400');
+    };
+    openRadarPreviewModal=openStatistics;
+    renderDatingExperience=renderPersonalNotes;
+    renderDebriefHistory=function() {};
+    window.addEventListener('pagehide',persistPersonalData);
+
+
+    function renderPreferences() {
+      const counts=new Map();
+      STATE.targets.forEach(t => [...new Set(t.keywords || [])].forEach(k => counts.set(k,(counts.get(k)||0)+1)));
+      const sorted=[...counts].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0],'zh-CN'));
+      document.getElementById('preference-ranking').innerHTML=sorted.length ? sorted.map(([k,count],i)=>'<div class="glass-card rounded-xl p-3"><div class="flex justify-between text-sm"><strong>'+(i+1)+'. '+escapeHtml(k)+'</strong><span class="text-rose-300">推荐值 '+Math.round(count/STATE.targets.length*100)+'%</span></div><p class="text-xs text-slate-400 mt-1">'+count+' / '+STATE.targets.length+' 人拥有这一共性</p></div>').join('') : '<p class="text-sm text-slate-400">填写下面的关键词后，排行会自动生成。</p>';
+      document.getElementById('preference-targets').innerHTML=STATE.targets.map(t=>'<label class="glass-card block rounded-xl p-3 text-sm">'+escapeHtml(t.name)+'<input aria-label="'+escapeHtml(t.name)+'的关键词" value="'+escapeHtml((t.keywords||[]).join('，'))+'" placeholder="例如：真诚，爱运动，尊重边界" onchange="saveKeywords('+t.id+',this.value)" class="block mt-2 w-full rounded-lg bg-slate-900 p-3"></label>').join('');
+    }
+    function saveKeywords(id,value) {
+      const target=STATE.targets.find(t=>t.id===id);if(!target)return;
+      target.keywords=[...new Set(value.split(/[,，、\n]+/).map(v=>v.trim()).filter(Boolean))];
+      persistPersonalData();renderPreferences();
+    }
+    const previousContextAdd=handleContextAdd;
+    handleContextAdd=function() {
+      if(STATE.activeTab==='preferences') { document.querySelector('#preference-targets input')?.focus();showToast('为意向人填写共性关键词'); }
+      else previousContextAdd();
+    };
+    const previousSwitchTab=switchTab;
+    switchTab=function(tabId) {
+      previousSwitchTab(tabId);
+      if(tabId==='preferences') {
+        renderPreferences();const btn=document.getElementById('context-add');btn.title='填写偏好关键词';btn.setAttribute('aria-label',btn.title);
+      }
+    };
+    function sendNoteToFlomo() {
+      const tag=document.getElementById('note-tag').value.trim();
+      const text=document.getElementById('note-text').value.trim();
+      if(!tag || !text) return showToast('先填写字段标签和经验教训');
+      const content='#app/社交笔记 #'+tag.replace(/\s+/g,'_')+'\n字段标签：'+tag+'\n经验教训：'+text;
+      if(content.length>5000) return showToast('flomo 内容不能超过5000字');
+      window.location.href='flomo://create?content='+encodeURIComponent(content);
+    }
+
+    /* ========== 页面加载初始化 ========== */
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPipeline();
+
+      renderDimensionSliders();
+      renderDebriefHistory();
+      renderDatingExperience();
+      drawRadarChart();
+    });
+
+    // 监听窗口尺寸变化重绘 Canvas
+    window.addEventListener('resize', () => {
+      if (STATE.activeTab === 'debrief') {
+        drawRadarChart();
+      }
+      if (activePreviewTargetId) {
+        const item = STATE.targets.find(t => t.id === activePreviewTargetId);
+        if (item) drawSpecificRadarChart('quickRadarCanvas', item.radar);
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
